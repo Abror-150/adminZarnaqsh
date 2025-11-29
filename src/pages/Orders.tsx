@@ -23,50 +23,63 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import axios from "axios";
+import { API } from "@/hooks/getEnv";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogTrigger,
+  DialogClose,
+} from "@/components/ui/dialog";
+
+interface ProductItem {
+  id: string;
+  Product: {
+    name_uz: string;
+  };
+  quantity: number;
+}
 
 interface Order {
   id: string;
-  customerName: string;
-  products: string[];
-  totalAmount: number;
-  date: string;
-  status: "pending" | "completed" | "shipped";
+  fullName: string;
+  totalPrice: number;
+  createdAt: string;
+  status?: "pending" | "completed" | "shipped";
+  OrderItem?: ProductItem[];
 }
 
-const mockOrders: Order[] = [
-  {
-    id: "ORD-001",
-    customerName: "Malika Karimova",
-    products: ["Silver Ring", "Gold Necklace"],
-    totalAmount: 579000,
-    date: "2025-01-15",
-    status: "pending",
-  },
-  {
-    id: "ORD-002",
-    customerName: "Aziz Rahimov",
-    products: ["Silver Ring"],
-    totalAmount: 129000,
-    date: "2025-01-14",
-    status: "shipped",
-  },
-  {
-    id: "ORD-003",
-    customerName: "Dilnoza Sharipova",
-    products: ["Gold Necklace"],
-    totalAmount: 450000,
-    date: "2025-01-13",
-    status: "completed",
-  },
-];
-
 export default function Orders() {
-  const [orders, setOrders] = useState<Order[]>(mockOrders);
+  const queryClient = useQueryClient();
+  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+  const [modalOpen, setModalOpen] = useState(false);
 
-  const handleDelete = (id: string) => {
-    setOrders(orders.filter((o) => o.id !== id));
-    toast.success("Order deleted successfully");
-  };
+  // Ordersni olish
+  const {
+    data: orders = [],
+    isLoading,
+    isError,
+  } = useQuery({
+    queryKey: ["orders"],
+    queryFn: async () => {
+      const res = await axios.get(`${API}/order`);
+      return res.data;
+    },
+  });
+
+  // Orderni o'chirish
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => axios.delete(`${API}/order/${id}`),
+    onSuccess: () => {
+      toast.success("Order deleted successfully");
+      queryClient.invalidateQueries({ queryKey: ["orders"] });
+    },
+    onError: () => toast.error("Error deleting order"),
+  });
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -81,75 +94,106 @@ export default function Orders() {
     }
   };
 
+  if (isLoading) return <p>Loading...</p>;
+  if (isError) return <p>Error loading orders</p>;
+
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold text-foreground">Orders</h1>
-        <p className="text-muted-foreground mt-1">View and manage customer orders</p>
+        <h1 className="text-3xl font-bold text-foreground">Buyurtmalar</h1>
+        <p className="text-muted-foreground mt-1">
+         Buyurtmalarni va clientlarni barchasini koring
+        </p>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>All Orders</CardTitle>
+          <CardTitle>Barcha buyurtmalar</CardTitle>
         </CardHeader>
         <CardContent>
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Order ID</TableHead>
-                <TableHead>Customer</TableHead>
-                <TableHead>Products</TableHead>
-                <TableHead>Amount</TableHead>
-                <TableHead>Date</TableHead>
+                <TableHead>Mahsulot id</TableHead>
+                <TableHead>Client</TableHead>
+                <TableHead>Mahsulotlar</TableHead>
+                <TableHead>Narxi</TableHead>
+                <TableHead>Sana</TableHead>
                 <TableHead>Status</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
+                <TableHead className="text-right">Harakat</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {orders.map((order) => (
+              {orders.map((order: Order) => (
                 <TableRow key={order.id}>
                   <TableCell className="font-medium">{order.id}</TableCell>
-                  <TableCell>{order.customerName}</TableCell>
+                  <TableCell>{order.fullName}</TableCell>
                   <TableCell>
                     <div className="flex flex-col gap-1">
-                      {order.products.map((product, i) => (
-                        <span key={i} className="text-sm text-muted-foreground">
-                          {product}
+                      {order.OrderItem?.map((item) => (
+                        <span
+                          key={item.id}
+                          className="text-sm text-muted-foreground"
+                        >
+                          {item.Product?.name_uz} {item.quantity} ta
                         </span>
-                      ))}
+                      )) || (
+                        <span className="text-sm text-muted-foreground">
+                          Mahsulotlar yoq
+                        </span>
+                      )}
                     </div>
                   </TableCell>
                   <TableCell className="font-mono">
-                    {order.totalAmount.toLocaleString()} UZS
+                    {(order.totalPrice ?? 0).toLocaleString()} UZS
                   </TableCell>
-                  <TableCell>{new Date(order.date).toLocaleDateString()}</TableCell>
                   <TableCell>
-                    <Badge className={getStatusColor(order.status)}>
-                      {order.status}
+                    {new Date(order.createdAt).toLocaleDateString()}
+                  </TableCell>
+                  <TableCell>
+                    <Badge
+                      className={getStatusColor(order.status || "pending")}
+                    >
+                      {order.status || "pending"}
                     </Badge>
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-2">
-                      <Button variant="ghost" size="sm">
+                      {/* Eye / View button */}
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          setSelectedOrder(order);
+                          setModalOpen(true);
+                        }}
+                      >
                         <Eye className="w-4 h-4" />
                       </Button>
+
+                      {/* Delete button */}
                       <AlertDialog>
                         <AlertDialogTrigger asChild>
-                          <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-destructive hover:text-destructive"
+                          >
                             <Trash2 className="w-4 h-4" />
                           </Button>
                         </AlertDialogTrigger>
                         <AlertDialogContent>
                           <AlertDialogHeader>
-                            <AlertDialogTitle>Delete Order</AlertDialogTitle>
+                            <AlertDialogTitle>O'chirasizmi buyurtmani</AlertDialogTitle>
                             <AlertDialogDescription>
-                              Are you sure you want to delete order {order.id}? This action cannot be undone.
+                              Are you sure you want to delete order {order.id}?
+                              This action cannot be undone.
                             </AlertDialogDescription>
                           </AlertDialogHeader>
                           <AlertDialogFooter>
                             <AlertDialogCancel>Cancel</AlertDialogCancel>
                             <AlertDialogAction
-                              onClick={() => handleDelete(order.id)}
+                              onClick={() => deleteMutation.mutate(order.id)}
                               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                             >
                               Delete
@@ -165,6 +209,34 @@ export default function Orders() {
           </Table>
         </CardContent>
       </Card>
+
+      <Dialog open={modalOpen} onOpenChange={setModalOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Order Details</DialogTitle>
+            <DialogDescription>
+              {selectedOrder?.fullName} — {selectedOrder?.id}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="mt-4 space-y-2">
+            {selectedOrder?.OrderItem?.map((item) => (
+              <div key={item.id} className="flex justify-between">
+                <span>{item.Product?.name_uz}</span>
+                <span>x{item.quantity}</span>
+              </div>
+            )) || <p>No products in this order.</p>}
+            <div className="flex justify-between font-bold mt-2">
+              <span>Total:</span>
+              <span>
+                {(selectedOrder?.totalPrice ?? 0).toLocaleString()} UZS
+              </span>
+            </div>
+          </div>
+          <DialogClose asChild>
+            <Button className="mt-4 w-full">Close</Button>
+          </DialogClose>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

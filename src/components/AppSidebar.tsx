@@ -1,4 +1,10 @@
-import { Package, Layers, ShoppingCart, MessageSquare, Sparkles } from "lucide-react";
+import {
+  Package,
+  Layers,
+  ShoppingCart,
+  MessageSquare,
+  Sparkles,
+} from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import {
   Sidebar,
@@ -13,10 +19,10 @@ import {
 } from "@/components/ui/sidebar";
 
 const items = [
-  { title: "Products", url: "/products", icon: Package },
+  { title: "Mahsulotlar", url: "/mahsulotlar", icon: Package },
   { title: "Materials", url: "/materials", icon: Layers },
-  { title: "Orders", url: "/orders", icon: ShoppingCart },
-  { title: "Messages", url: "/messages", icon: MessageSquare },
+  { title: "Buyurtmalar", url: "/buyurtmalar", icon: ShoppingCart },
+  { title: "Xabarlar", url: "/xabarlar", icon: MessageSquare },
 ];
 
 export function AppSidebar() {
@@ -32,7 +38,9 @@ export function AppSidebar() {
             </div>
             {open && (
               <div>
-                <h2 className="text-lg font-semibold text-sidebar-foreground">Zarnaqsh</h2>
+                <h2 className="text-lg font-semibold text-sidebar-foreground">
+                  Zarnaqsh
+                </h2>
                 <p className="text-xs text-muted-foreground">Admin Panel</p>
               </div>
             )}

@@ -4,7 +4,6 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AdminLayout } from "./components/AdminLayout";
-import Dashboard from "./pages/Dashboard";
 import Products from "./pages/Products";
 import Materials from "./pages/Materials";
 import Orders from "./pages/Orders";
@@ -20,12 +19,39 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <Routes>
-          <Route path="/" element={<Navigate to="/dashboard" replace />} />
-          <Route path="/dashboard" element={<AdminLayout><Dashboard /></AdminLayout>} />
-          <Route path="/products" element={<AdminLayout><Products /></AdminLayout>} />
-          <Route path="/materials" element={<AdminLayout><Materials /></AdminLayout>} />
-          <Route path="/orders" element={<AdminLayout><Orders /></AdminLayout>} />
-          <Route path="/messages" element={<AdminLayout><Messages /></AdminLayout>} />
+          <Route path="/" element={<Navigate to="/mahsulotlar" replace />} />
+          <Route
+            path="/mahsulotlar"
+            element={
+              <AdminLayout>
+                <Products />
+              </AdminLayout>
+            }
+          />
+          <Route
+            path="/materials"
+            element={
+              <AdminLayout>
+                <Materials />
+              </AdminLayout>
+            }
+          />
+          <Route
+            path="/buyurtmalar"
+            element={
+              <AdminLayout>
+                <Orders />
+              </AdminLayout>
+            }
+          />
+          <Route
+            path="/xabarlar"
+            element={
+              <AdminLayout>
+                <Messages />
+              </AdminLayout>
+            }
+          />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
